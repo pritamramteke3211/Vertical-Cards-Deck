@@ -2,7 +2,7 @@
 
 This is a React Native library that provides vertical cards deck animation functionalities.
 
-![This is a Preview.](/1_VerticalCardDeck/demoGif.gif "\This is a Preview.")
+![This is a Preview.](/demoGif.gif "\This is a Preview.")
 
 ## Installation
 
