@@ -1,5 +1,5 @@
 import { Text, View, Vibration } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -320,6 +320,8 @@ const VerticalCardsDeck = ({
 }) => {
   const aNum = useSharedValue(1);
 
+  const dList = useSharedValue(dataList)
+
   const pList = useSharedValue(
     Object.values([
       ...dataList.map((_, index) => index).slice(0, 1),
@@ -351,6 +353,38 @@ const VerticalCardsDeck = ({
   const dirLis = useSharedValue([
     ...dataList.map((item, index) => (index == 0 ? 1 : 0)),
   ]);
+
+  useAnimatedReaction(
+    () => dList.value,
+    (newOrder) => {
+    
+      pList.value = 
+      Object.values([
+        ...dList.value.map((_, index) => index).slice(0, 1),
+        ...dList.value.map((_, index) => index)
+          .slice(1)
+          .reverse(),
+      ])
+      
+
+      pListTmp.value =  Object.values([
+        ...dList.value.map((_, index) => index).slice(0, 1),
+        ...dList.value.map((_, index) => index)
+          .slice(1)
+          .reverse(),
+      ])
+
+      dirLis.value = [
+        ...dList.value.map((item, index) => (index == 0 ? 1 : 0)),
+      ]
+    
+    }
+  );
+
+  useEffect(() => {
+    dList.value = dataList
+  }, [dataList])
+  
 
   return (
     <GestureHandlerRootView
