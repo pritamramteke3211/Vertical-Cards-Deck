@@ -1,4 +1,4 @@
-import { Text, View, Vibration } from "react-native";
+import { Text, View, Vibration, StyleSheet } from "react-native";
 import React, { useEffect } from "react";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,9 +9,44 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  SharedValue,
 } from "react-native-reanimated";
 
-const CardAnItem = ({
+type CardItemProps = {
+  index: number;
+  dataList: any[];
+  pList: SharedValue<number[]>;
+  aNum: SharedValue<number>;
+  dirLis: SharedValue<number[]>;
+  pListTmp: SharedValue<number[]>;
+  cardHeight?: number;
+  cardWidth?: number;
+  cardColor?: string;
+  item: any;
+  renderContent: (item: any, index: number) => React.ReactNode;
+  cardBorderRadius?: number;
+  cardBorderWidth?: number;
+  cardBorderColor?: string;
+  cardDistance?: number;
+  belowCardsDistance?: "high" | "middle" | "low";
+};
+
+type VerticalCardsDeckProps = {
+  dataList: any[];
+  cardColor?: string;
+  renderContent?: (item: any, index: number) => React.ReactNode;
+  cardDistance?: number;
+  cardHeight?: number;
+  cardWidth?: number;
+  containerHeight?: number;
+  cardBorderRadius?: number;
+  cardBorderWidth?: number;
+  cardBorderColor?: string;
+  containerColor?: string;
+  belowCardsDistance?: "high" | "middle" | "low";
+};
+
+const CardAnItem: React.FC<CardItemProps> = ({
   index,
   dataList,
   pList,
@@ -25,78 +60,91 @@ const CardAnItem = ({
   renderContent,
   cardBorderRadius = 20,
   cardBorderWidth = 1,
-  cardBorderColor="#000000",
+  cardBorderColor = "#000000",
   cardDistance = 150,
   belowCardsDistance = "middle",
 }) => {
-  const translateY = useSharedValue(index == 0 ? -cardDistance : cardDistance);
+  const translateY = useSharedValue(index === 0 ? -cardDistance : cardDistance);
   const transSortY = useSharedValue(0);
   const scaleBox = useSharedValue(1);
   const isGestureActive = useSharedValue(false);
   const prevIndex = useSharedValue(index);
-  const activeIndxs = useSharedValue(index);
+  const activeIndxs = useSharedValue<number[]>([]);
 
   const backCardPos =
-    belowCardsDistance == "high"
+    belowCardsDistance === "high"
       ? 30
-      : belowCardsDistance == "middle"
+      : belowCardsDistance === "middle"
       ? 25
       : 20;
 
   useAnimatedReaction(
     () => dirLis.value,
-
     (newOrder) => {
-
-      let activeItemIndex = newOrder.map((v, index) => {
-
-        if (index < newOrder.length - 1) {
-          if (v == 1 && newOrder[index + 1] == 0) {
-            activeIndxs.value = [index, index + 1];
-          }
+      const newActiveIndxs: number[] = [];
+      newOrder.forEach((v, i) => {
+        if (i < newOrder.length - 1 && v === 1 && newOrder[i + 1] === 0) {
+          newActiveIndxs.push(i, i + 1);
         }
       });
+      activeIndxs.value = newActiveIndxs;
 
-      let topCards = newOrder
-        .filter((val, index) => val == 1)
-        .map((val, index) => {
-          return { indx: index, dir: val };
-        })
+      const topCards = newOrder
+        .filter((val, i) => val === 1)
+        .map((val, i) => ({ indx: i, dir: val }))
         .reverse();
 
-      let bottomCards = newOrder
-        .filter((val, index) => val == 0)
-        .map((val, index) => {
-          return { indx: index, dir: val };
-        })
+      const bottomCards = newOrder
+        .filter((val, i) => val === 0)
+        .map((val, i) => ({ indx: i, dir: val }))
         .reverse();
 
-      let cCardDir = newOrder[prevIndex.value];
+      const cCardDir = newOrder[prevIndex.value];
 
-      if (cCardDir == 1 && topCards.length > 1) {
-        let indV = topCards[prevIndex.value]?.indx;
-        transSortY.value = withTiming(indV * -backCardPos);
-        scaleBox.value = withTiming(indV <= 2 ? 1 - indV * 0.1 : 0.01);
-      } else if (cCardDir == 0 && bottomCards.length > 1) {
-        let dnIndx = dataList.length - (prevIndex.value + 1);
-        let indVB = bottomCards[dnIndx]?.indx;
-        scaleBox.value = withTiming(indVB <= 2 ? 1 - indVB * 0.1 : 0.01);
-        transSortY.value = withTiming(indVB * backCardPos);
+      if (cCardDir === 1 && topCards.length > 1) {
+        const indV = topCards[prevIndex.value]?.indx ?? 0;
+        transSortY.value = withTiming(indV * -backCardPos, {
+          duration: 600,
+        });
+        //    scaleBox.value = withTiming(indV <= 2 ? 1 - indV * 0.1 : 0);
+        scaleBox.value =
+          indV <= 2
+            ? withTiming(1 - indV * 0.1, {
+                duration: 600,
+              })
+            : 0;
+      } else if (cCardDir === 0 && bottomCards.length > 1) {
+        const dnIndx = dataList.length - (prevIndex.value + 1);
+        const indVB = bottomCards[dnIndx]?.indx ?? 0;
+        //    scaleBox.value = withTiming(indVB <= 2 ? 1 - indVB * 0.1 : 0);
+        scaleBox.value =
+          indVB <= 2
+            ? withTiming(1 - indVB * 0.1, {
+                duration: 600,
+              })
+            : 0;
+        transSortY.value = withTiming(indVB * backCardPos, {
+          duration: 600,
+        });
       } else {
-        transSortY.value = withTiming(0);
-        scaleBox.value = withTiming(1);
+        transSortY.value = withTiming(0, {
+          duration: 600,
+        });
+        scaleBox.value = withTiming(1, {
+          duration: 600,
+        });
       }
     }
   );
 
   const upDirVal = () => {
-    let tmp = [...dirLis.value];
+    const tmp = [...dirLis.value];
     tmp[prevIndex.value] = 1;
     dirLis.value = tmp;
   };
 
   const downDirVal = () => {
-    let tmp = [...dirLis.value];
+    const tmp = [...dirLis.value];
     tmp[prevIndex.value] = 0;
     dirLis.value = tmp;
   };
@@ -108,7 +156,7 @@ const CardAnItem = ({
   const increaseVal2 = () => {
     const [cont1, cont2] = pListTmp.value
       .slice(1, pListTmp.value.length - 1)
-      .reduce(
+      .reduce<[number[], number[]]>(
         ([cont1, cont2], item, index) => {
           (index < prevIndex.value ? cont1 : cont2).push(item);
           return [cont1, cont2];
@@ -116,8 +164,8 @@ const CardAnItem = ({
         [[], []]
       );
 
-    let sList = [...cont1].sort((a, b) => a - b);
-    let spList = [...cont2];
+    const sList = [...cont1].sort((a, b) => a - b);
+    const spList = [...cont2];
 
     pList.value = [
       pListTmp.value[0],
@@ -130,17 +178,16 @@ const CardAnItem = ({
   const decreaseVal2 = () => {
     const [cont1, cont2] = pListTmp.value
       .slice(1, pListTmp.value.length - 1)
-      .reduce(
+      .reduce<[number[], number[]]>(
         ([cont1, cont2], item, index) => {
           (index < prevIndex.value - 1 ? cont1 : cont2).push(item);
           return [cont1, cont2];
         },
-
         [[], []]
       );
 
-    let sList = [...cont1];
-    let spList = [...cont2].sort((a, b) => b - a);
+    const sList = [...cont1];
+    const spList = [...cont2].sort((a, b) => b - a);
 
     pList.value = [
       pListTmp.value[0],
@@ -151,7 +198,9 @@ const CardAnItem = ({
   };
 
   const vibrateMe = () => {
-    Vibration.vibrate(100);
+    try {
+      Vibration.vibrate(100);
+    } catch (error) {}
   };
 
   const setTmp = () => {
@@ -159,34 +208,30 @@ const CardAnItem = ({
   };
 
   const panGesture = useAnimatedGestureHandler({
-    onStart: (_, ctx) => {
+    onStart: (_, ctx: { startY: number }) => {
       ctx.startY = translateY.value;
-
       if (
-        prevIndex.value != 0 &&
-        prevIndex.value != dataList.length - 1 &&
+        prevIndex.value !== 0 &&
+        prevIndex.value !== dataList.length - 1 &&
         activeIndxs.value.includes(prevIndex.value)
       ) {
         isGestureActive.value = true;
-
         runOnJS(setTmp)();
       } else {
         isGestureActive.value = false;
-
         runOnJS(vibrateMe)();
       }
     },
 
-    onActive: (evt, ctx) => {
+    onActive: (evt, ctx: { startY: number }) => {
       if (
         ctx.startY + evt.translationY > -(cardDistance + 40) &&
         ctx.startY + evt.translationY < cardDistance + 40 &&
         isGestureActive.value
       ) {
         translateY.value = ctx.startY + evt.translationY;
-
         if (dataList.length > 3) {
-          if (dirLis.value[prevIndex.value] == 0) {
+          if (dirLis.value[prevIndex.value] === 0) {
             if (prevIndex.value > 1 && prevIndex.value < dataList.length - 1) {
               runOnJS(increaseVal2)();
             }
@@ -206,12 +251,10 @@ const CardAnItem = ({
     onEnd: (evt) => {
       if (isGestureActive.value) {
         if (dataList.length > 2) {
-          if (dirLis.value[prevIndex.value] == 0) {
+          if (dirLis.value[prevIndex.value] === 0) {
             if (evt.translationY < -(cardDistance / 16)) {
               translateY.value = withTiming(-cardDistance);
-
               runOnJS(upDirVal)();
-
               if (
                 prevIndex.value > 1 &&
                 prevIndex.value < dataList.length - 1
@@ -220,7 +263,6 @@ const CardAnItem = ({
               }
             } else {
               translateY.value = withTiming(cardDistance);
-
               if (
                 prevIndex.value > 1 &&
                 prevIndex.value < dataList.length - 1
@@ -231,15 +273,12 @@ const CardAnItem = ({
           } else {
             if (evt.translationY > cardDistance / 16) {
               translateY.value = withTiming(cardDistance);
-
               runOnJS(downDirVal)();
-
               if (prevIndex.value > 2) {
-                aNum.value = aNum.value - 1;
+                aNum.value = Math.max(aNum.value - 1, 0);
               }
             } else {
               translateY.value = withTiming(-cardDistance);
-
               if (
                 prevIndex.value > 0 &&
                 prevIndex.value < dataList.length - 2
@@ -249,11 +288,11 @@ const CardAnItem = ({
             }
           }
         } else {
-          if (evt.translationY < -(cardDistance / 16)) {
-            translateY.value = withTiming(-cardDistance);
-          } else {
-            translateY.value = withTiming(cardDistance);
-          }
+          translateY.value = withTiming(
+            evt.translationY < -(cardDistance / 16)
+              ? -cardDistance
+              : cardDistance
+          );
         }
       }
     },
@@ -276,18 +315,16 @@ const CardAnItem = ({
   });
 
   return (
-    <Animated.View style={{ ...animatedStyle }}>
+    <Animated.View style={animatedStyle}>
       <PanGestureHandler onGestureEvent={panGesture}>
         <Animated.View>
           <View
             style={[
+              styles.card,
               {
                 borderRadius: cardBorderRadius,
                 borderColor: cardBorderColor,
                 borderWidth: cardBorderWidth,
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
                 backgroundColor: cardColor,
                 width: cardWidth,
                 height: cardHeight,
@@ -302,12 +339,12 @@ const CardAnItem = ({
   );
 };
 
-const VerticalCardsDeck = ({
+const VerticalCardsDeck: React.FC<VerticalCardsDeckProps> = ({
   dataList = [1, 2, 3, 4, 5, 6],
   cardColor = "#43a9d8",
-  renderContent = (item, index) => <Text
-  style={{fontSize: 24, color:'#ffffff', fontWeight:'bold'}}
-  >Card {index + 1}</Text>,
+  renderContent = (item, index) => (
+    <Text style={styles.cardText}>Card {index + 1}</Text>
+  ),
   cardDistance = 134,
   cardHeight = 255,
   cardWidth = 357,
@@ -319,107 +356,81 @@ const VerticalCardsDeck = ({
   belowCardsDistance = "middle",
 }) => {
   const aNum = useSharedValue(1);
+  const dList = useSharedValue(dataList);
 
-  const dList = useSharedValue(dataList)
-
-  const pList = useSharedValue(
-    Object.values([
-      ...dataList.map((_, index) => index).slice(0, 1),
-
-      ...dataList
-
-        .map((_, index) => index)
-
-        .slice(1)
-
-        .reverse(),
-    ])
-  );
-
-  const pListTmp = useSharedValue(
-    Object.values([
-      ...dataList.map((_, index) => index).slice(0, 1),
-
-      ...dataList
-
-        .map((_, index) => index)
-
-        .slice(1)
-
-        .reverse(),
-    ])
-  );
-
-  const dirLis = useSharedValue([
-    ...dataList.map((item, index) => (index == 0 ? 1 : 0)),
-  ]);
-
-  useAnimatedReaction(
-    () => dList.value,
-    (newOrder) => {
-    
-      pList.value = 
-      Object.values([
-        ...dList.value.map((_, index) => index).slice(0, 1),
-        ...dList.value.map((_, index) => index)
+  const initializeLists = () => {
+    return {
+      pList: Object.values([
+        ...dataList.map((_, index) => index).slice(0, 1),
+        ...dataList
+          .map((_, index) => index)
           .slice(1)
           .reverse(),
-      ])
-      
+      ]),
+      dirLis: [...dataList.map((_, index) => (index === 0 ? 1 : 0))],
+    };
+  };
 
-      pListTmp.value =  Object.values([
-        ...dList.value.map((_, index) => index).slice(0, 1),
-        ...dList.value.map((_, index) => index)
-          .slice(1)
-          .reverse(),
-      ])
-
-      dirLis.value = [
-        ...dList.value.map((item, index) => (index == 0 ? 1 : 0)),
-      ]
-    
-    }
-  );
+  const { pList: initialPList, dirLis: initialDirLis } = initializeLists();
+  const pList = useSharedValue(initialPList);
+  const pListTmp = useSharedValue(initialPList);
+  const dirLis = useSharedValue(initialDirLis);
 
   useEffect(() => {
-    dList.value = dataList
-  }, [dataList])
-  
+    dList.value = dataList;
+    const { pList: newPList, dirLis: newDirLis } = initializeLists();
+    pList.value = newPList;
+    pListTmp.value = newPList;
+    dirLis.value = newDirLis;
+  }, [dataList]);
 
   return (
     <GestureHandlerRootView
-      style={{
-        height: containerHeight,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: containerColor,
-      }}
+      style={[
+        styles.container,
+        { height: containerHeight, backgroundColor: containerColor },
+      ]}
     >
-      {dataList.map((item, index) => {
-        return (
-          <CardAnItem
-            key={index}
-            index={index}
-            dataList={dataList}
-            pList={pList}
-            aNum={aNum}
-            dirLis={dirLis}
-            pListTmp={pListTmp}
-            cardHeight={cardHeight}
-            cardWidth={cardWidth}
-            cardColor={cardColor}
-            item={item}
-            cardDistance={cardDistance}
-            renderContent={renderContent}
-            cardBorderRadius={cardBorderRadius}
-            cardBorderWidth={cardBorderWidth}
-            cardBorderColor={cardBorderColor}
-            belowCardsDistance={belowCardsDistance}
-          />
-        );
-      })}
+      {dataList.map((item, index) => (
+        <CardAnItem
+          key={index}
+          index={index}
+          dataList={dataList}
+          pList={pList}
+          aNum={aNum}
+          dirLis={dirLis}
+          pListTmp={pListTmp}
+          cardHeight={cardHeight}
+          cardWidth={cardWidth}
+          cardColor={cardColor}
+          item={item}
+          cardDistance={cardDistance}
+          renderContent={renderContent}
+          cardBorderRadius={cardBorderRadius}
+          cardBorderWidth={cardBorderWidth}
+          cardBorderColor={cardBorderColor}
+          belowCardsDistance={belowCardsDistance}
+        />
+      ))}
     </GestureHandlerRootView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  card: {
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  cardText: {
+    fontSize: 24,
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+});
 
 export default VerticalCardsDeck;

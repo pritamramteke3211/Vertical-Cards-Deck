@@ -2,7 +2,9 @@
 
 This is a React Native library that provides vertical cards deck animation functionalities.
 
-![This is a Preview.](/demoGif.gif "\This is a Preview.")
+<!-- ![This is a Preview.](/demoGif.gif "\This is a Preview.") -->
+
+![This is a Preview.](https://i.imgur.com/GcrEWUv.gif "This is a Preview.")
 
 ## Installation
 
@@ -16,7 +18,6 @@ yarn add react-native-vertical-cards-deck
 
 Now we need to install [react-native-gesture-handler](https://github.com/software-mansion/react-native-gesture-handler) and [react-native-reanimated(>=2.0.0)](https://github.com/software-mansion/react-native-reanimated).
 
-
 ## Permission
 
 On Android you must ask for vibration permission, To enable add the following code to the AndroidManifest.xml:
@@ -25,8 +26,9 @@ On Android you must ask for vibration permission, To enable add the following co
   <uses-permission android:name="android.permission.VIBRATE"/>
 ```
 
-## Note 
-If an error occurs regarding the Reanimated library after installing it, simply reset the app cache using `npm start -- --reset-cache`. 
+## Note
+
+If an error occurs regarding the Reanimated library after installing it, simply reset the app cache using `npm start -- --reset-cache`.
 
 ## Usage
 
